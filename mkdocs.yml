@@ -1,1 +1,4 @@
 site_name: My Docs
+nav:
+  - index: index.md
+  - about: about.md
