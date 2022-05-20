@@ -107,6 +107,27 @@
             </li>
               </ul>
             </li>
+            
+            <li class="nav-item" data-level="1"><a href="#guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc" class="nav-link">Guide to predefined macros in C++ compilers (gcc, clang, msvc etc.)</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#checking-for-os-platform" class="nav-link">Checking for OS (platform)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#checking-the-compiler" class="nav-link">Checking the compiler:</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#checking-compiler-version" class="nav-link">Checking compiler version</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#checking-processor-architecture" class="nav-link">Checking processor architecture</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
         </ul>
     </div>
 </div></div>
@@ -247,7 +268,108 @@ template&lt;class T&gt;
 struct iterator_traits&lt;const T*&gt;{
     typedef T value_type;
 };
-</code></pre></div>
+</code></pre>
+<h1 id="guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc">Guide to predefined macros in C++ compilers (gcc, clang, msvc etc.)</h1>
+<p>When writing portable C++ code you need to write conditional code that depends on compiler used or the OS for which the code is written.</p>
+<p>Here’s a typical case:</p>
+<pre><code>#if defined (_MSC_VER)
+// code specific to Visual Studio compiler
+#endif
+</code></pre>
+<p>To perform those checks you need to check pre-processor macros that various compilers set.</p>
+<p>It can either be binary is defined vs. is not defined check (e.g. <code>__APPLE__</code>) or checking a value of the macro (e.g. <code>_MSC_VER</code> defines version of Visual Studio compiler).</p>
+<p>This document describes macros set by various compilers.</p>
+<p>Other documentations:</p>
+<ul>
+<li>predefined macros in <a href="https://msdn.microsoft.com/en-us/library/b0084kay.aspx">Visual Studio</a></li>
+<li>https://sourceforge.net/p/predef/wiki/Compilers/</li>
+<li>to list clang’s pre-defined macros: <code>clang -x c /dev/null -dM -E</code></li>
+<li>to list gcc’s pre-defined macros: <code>gcc -x c /dev/null -dM -E</code> (not that on mac gcc is actually clang that ships with XCode)</li>
+<li>the <code>-x c /dev/null -dM -E</code> also works for mingw (which is based on gcc)</li>
+<li>listing predefined macros <a href="http://nadeausoftware.com/articles/2011/12/c_c_tip_how_list_compiler_predefined_macros">for other compilers</a></li>
+</ul>
+<h2 id="checking-for-os-platform">Checking for OS (platform)</h2>
+<p>To check for which OS the code is compiled:</p>
+<pre><code>Linux and Linux-derived           __linux__
+Android                           __ANDROID__ (implies __linux__)
+Linux (non-Android)               __linux__ &amp;&amp; !__ANDROID__
+Darwin (Mac OS X and iOS)         __APPLE__
+Akaros (http://akaros.org)        __ros__
+Windows                           _WIN32
+Windows 64 bit                    _WIN64 (implies _WIN32)
+NaCL                              __native_client__
+AsmJS                             __asmjs__
+Fuschia                           __Fuchsia__
+</code></pre>
+<h2 id="checking-the-compiler">Checking the compiler:</h2>
+<p>To check which compiler is used:</p>
+<pre><code>Visual Studio       _MSC_VER
+gcc                 __GNUC__
+clang               __clang__
+emscripten          __EMSCRIPTEN__ (for asm.js and webassembly)
+MinGW 32            __MINGW32__
+MinGW-w64 32bit     __MINGW32__
+MinGW-w64 64bit     __MINGW64__
+</code></pre>
+<h2 id="checking-compiler-version">Checking compiler version</h2>
+<h3 id="gcc">gcc</h3>
+<p><code>__GNUC__</code> (e.g. 5) and <code>__GNUC_MINOR__</code> (e.g. 1).</p>
+<p>To check that this is gcc compiler version 5.1 or greater:</p>
+<pre><code>#if defined(__GNUC__) &amp;&amp; (__GNUC___ &gt; 5 || (__GNUC__ == 5 &amp;&amp; __GNUC_MINOR__ &gt;= 1))
+// this is gcc 5.1 or greater
+#endif
+</code></pre>
+<p>Notice the chack has to be: <code>major &gt; 5 || (major == 5 &amp;&amp; minor &gt;= 1)</code>. If you only do <code>major == 5 &amp;&amp; minor &gt;= 1</code>, it won’t work for version 6.0.</p>
+<h3 id="clang">clang</h3>
+<pre><code>__clang_major__`, `__clang_minor__`, `__clang_patchlevel__
+</code></pre>
+<h3 id="visual-studio">Visual Studio</h3>
+<p><code>_MSC_VER</code> and <code>_MSC_FULL_VER</code>:</p>
+<pre><code>VS                        _MSC_VER   _MSC_FULL_VER
+1                         800
+3                         900
+4                         1000
+4                         1020
+5                         1100
+6                         1200
+6 SP6                     1200    12008804
+7                         1300    13009466
+7.1 (2003)                1310    13103077
+8 (2005)                  1400    140050727
+9 (2008)                  1500    150021022
+9 SP1                     1500    150030729
+10 (2010)                 1600    160030319
+10 (2010) SP1             1600    160040219
+11 (2012)                 1700    170050727
+12 (2013)                 1800    180021005
+14 (2015)                 1900    190023026
+14 (2015 Update 1)        1900    190023506
+14 (2015 Update 2)        1900    190023918
+14 (2015 Update 3)        1900    190024210
+15 (2017 Update 1 &amp; 2)    1910    191025017
+15 (2017 Update 3 &amp; 4)    1911
+15 (2017 Update 5)        1912
+</code></pre>
+<p>More information:</p>
+<ul>
+<li>https://blogs.msdn.microsoft.com/vcblog/2016/10/05/visual-c-compiler-version/</li>
+<li>https://blogs.msdn.microsoft.com/vcblog/2017/11/15/side-by-side-minor-version-msvc-toolsets-in-visual-studio-2017/#comment-467525</li>
+</ul>
+<h3 id="mingw">MinGW</h3>
+<p>MinGW (aka MinGW32) and MinGW-w64 32bit: <code>__MINGW32_MAJOR_VERSION</code> and <code>__MINGW32_MINOR_VERSION</code></p>
+<p>MinGW-w64 64bit: <code>__MINGW64_VERSION_MAJOR</code> and <code>__MINGW64_VERSION_MINOR</code></p>
+<h2 id="checking-processor-architecture">Checking processor architecture</h2>
+<h3 id="gcc_1">gcc</h3>
+<p>The meaning of those should be self-evident:</p>
+<ul>
+<li><code>__i386__</code></li>
+<li><code>__x86_64__</code></li>
+<li><code>__arm__</code>. If defined, you can further check:</li>
+<li><code>__ARM_ARCH_5T__</code></li>
+<li><code>__ARM_ARCH_7A__</code></li>
+<li><code>__powerpc64__</code></li>
+<li><code>__aarch64__</code></li>
+</ul></div>
             </div>
         </div>
 
