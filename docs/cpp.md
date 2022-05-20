@@ -74,9 +74,100 @@ Useless::Useless(Useless &&f) {
 
 
 
+# iterators中的traits编程技法
 
+## iterator的相应类别
 
+在算法中运用iterator时很可能会用到它的相应类别(associated type)，也就是iterator所指的东西的类别。假设算法中要声明一个变量，以“iterator所指对象的类别”为类别，该怎么办？
 
+可以利用function template的参数推导机制。
+
+```c++
+template<class I, class T>
+void func_impl(I iter, T t) {
+    T tmp; //T就是iter所指对象的类别
+
+    // ... 这里做func()中的工作
+    tmp = t;
+    cout << tmp << endl; //输出5
+}
+
+template<class I>
+inline void func(I iter) {
+    //在这个函数中要声明一个变量，以iter所指对象的类别为类别
+    func_impl(iter, *iter); //将func的工作全部移往func_impl
+}
+
+int main() {
+    int i = 5;
+    func(&i);
+}
+```
+
+但是，iterator的相应类别不只“iter所指东西的类别”这一种，常见的有5种。并非任何情况下任何一种都可以用function template的参数推导机制来取得。
+
+## 声明内嵌类别
+
+template的参数推导机制只能推导参数，无法推导函数的返回值类别。
+
+通过声明内嵌类别是个好主意！像这样：
+
+```c++
+//声明一个iterator
+template<class T>
+struct MyIter {
+    typedef T value_type; //声明内嵌类别
+    T *ptr;
+    MyIter(T *p = 0) : ptr(p) {}
+    T &operator*() const { return *ptr; }
+};
+
+template<class I>
+typename I::value_type func(I iter) { //函数返回值是typename I::value_type
+    return *iter;
+}
+
+int main() {
+    MyIter<int> iter(new int(8));
+    cout << func(iter) << endl; //输出8
+}
+```
+
+但是不是所有iterator都是class type，原生指针就不是。class type无法为原生指针定义内嵌类别。
+
+## 模板偏特化(template partial specialization)
+
+模板偏特化的意义：如果class template有多个template参数，针对(任何)template参数更进一步的条件限制所设计出来的一个特化版本。
+
+```c++
+template<typename T>
+class C{};
+
+template<typename T> //仅适用于T为原生指针的情况的特化版本
+class C<T*>{};
+```
+
+可以用下面的class template来萃取iterator的traits，value_type是traits之一
+
+```c++
+//如果I有自己的value_type，那萃取得到的value_type就是I::value_type
+template<class I>
+struct iterator_traits {
+    typedef typename I::value_type value_type;
+};
+
+//针对iterator是原生指针的偏特化版本
+template<class T>
+struct iterator_traits<T*> {
+    typedef T value_type;
+};
+
+//针对iterator是pointer-to-const时, 萃取的类别应该是T而非const T
+template<class T>
+struct iterator_traits<const T*>{
+    typedef T value_type;
+};
+```
 
 
 
