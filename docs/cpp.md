@@ -215,7 +215,7 @@ AsmJS                             __asmjs__
 Fuschia                           __Fuchsia__
 ```
 
-## Checking the compiler:
+## Checking the compiler
 
 To check which compiler is used:
 
