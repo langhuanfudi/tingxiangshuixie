@@ -8,7 +8,7 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>cpp - My Docs</title>
+        <title>右值引用与移动语义 - My Docs</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/font-awesome.min.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
@@ -39,8 +39,8 @@
                             <li class="navitem">
                                 <a href="../about/" class="nav-link">about</a>
                             </li>
-                            <li class="navitem active">
-                                <a href="./" class="nav-link">cpp</a>
+                            <li class="navitem">
+                                <a href="../右值引用与移动语义.md" class="nav-link">cpp</a>
                             </li>
                         </ul>
 
@@ -50,16 +50,6 @@
                                 <i class="fa fa-search"></i> Search
                             </a>
                         </li>
-                            <li class="nav-item">
-                                <a rel="prev" href="../about/" class="nav-link">
-                                    <i class="fa fa-arrow-left"></i> Previous
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a rel="next" class="nav-link disabled">
-                                    Next <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </li>
                     </ul>
                 </div>
             </div>
@@ -78,13 +68,16 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-level="2"><a href="#_1" class="nav-link">为何需要移动语义</a>
+            <li class="nav-item" data-level="1"><a href="#_1" class="nav-link">右值引用与移动语义</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#_2" class="nav-link">为何需要移动语义</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            
-            <li class="nav-item" data-level="2"><a href="#_2" class="nav-link">一个移动示例</a>
+            <li class="nav-item" data-level="2"><a href="#_3" class="nav-link">一个移动示例</a>
               <ul class="nav flex-column">
+              </ul>
+            </li>
               </ul>
             </li>
         </ul>
@@ -92,7 +85,8 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h2 id="_1">为何需要移动语义</h2>
+<h1 id="_1">右值引用与移动语义</h1>
+<h2 id="_2">为何需要移动语义</h2>
 <p>假设我们要做这样一个复制过程</p>
 <pre><code class="language-c++">vector&lt;string&gt; vstr;
 // 构建一个包含20000个string的vector, 每个string有1000个字符
@@ -115,7 +109,7 @@ vector&lt;string&gt; vstr_copy2(allcaps(vstr));   //#2
 <p>好比你家住在上海，现在你家位置完全没变，但把上海直接改名叫北京，然后你家就住在北京了</p>
 </blockquote>
 <p>要实现移动语义需要通过某种方式让编译器知道，什么时候要copy，什么时候不要。右值引用就是干这个的，对于常规的拷贝构造函数，用const左值引用来作为参数，将这个引用关联到左值实参，如语句#1中的vstr。另外写一个移动构造函数，用右值引用作为参数，关联到右值实参，如语句#2中的allcaps(vstr)。拷贝构造函数可以执行深复制，移动构造函数只修改记录。移动构造函数要把所有权转移给新对象，可能修改其实参，意味着右值引用的参数不是const的。</p>
-<h2 id="_2">一个移动示例</h2>
+<h2 id="_3">一个移动示例</h2>
 <pre><code class="language-c++">class Useless {
 private:
     int n;         // number of elements
