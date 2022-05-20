@@ -8,7 +8,7 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>cpp - My Docs</title>
+        <title>cpp - 听香水榭</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/font-awesome.min.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
@@ -23,7 +23,7 @@
     <body>
         <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
             <div class="container">
-                <a class="navbar-brand" href="..">My Docs</a>
+                <a class="navbar-brand" href="..">听香水榭</a>
                 <!-- Expander button -->
                 <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
                     <span class="navbar-toggler-icon"></span>
@@ -85,6 +85,23 @@
               </ul>
             </li>
             <li class="nav-item" data-level="2"><a href="#_3" class="nav-link">一个移动示例</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#iteratorstraits" class="nav-link">iterators中的traits编程技法</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#iterator" class="nav-link">iterator的相应类别</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#_4" class="nav-link">声明内嵌类别</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#template-partial-specialization" class="nav-link">模板偏特化(template partial specialization)</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -155,7 +172,82 @@ Useless::Useless(Useless &amp;&amp;f) {
     ShowObject();
 }
 </code></pre>
-<p>这里只列举了普通的拷贝构造函数和移动构造函数。拷贝构造函数执行了深复制，而移动构造函数直接将pc指向现有的数据来获取所有权。pc和f.pc不能指向同一个地址，因为析构时不能delete两次，所以要将原来的f.pc设为nullptr。这里修改了f，所以参数声明中不加const。</p></div>
+<p>这里只列举了普通的拷贝构造函数和移动构造函数。拷贝构造函数执行了深复制，而移动构造函数直接将pc指向现有的数据来获取所有权。pc和f.pc不能指向同一个地址，因为析构时不能delete两次，所以要将原来的f.pc设为nullptr。这里修改了f，所以参数声明中不加const。</p>
+<h1 id="iteratorstraits">iterators中的traits编程技法</h1>
+<h2 id="iterator">iterator的相应类别</h2>
+<p>在算法中运用iterator时很可能会用到它的相应类别(associated type)，也就是iterator所指的东西的类别。假设算法中要声明一个变量，以“iterator所指对象的类别”为类别，该怎么办？</p>
+<p>可以利用function template的参数推导机制。</p>
+<pre><code class="language-c++">template&lt;class I, class T&gt;
+void func_impl(I iter, T t) {
+    T tmp; //T就是iter所指对象的类别
+
+    // ... 这里做func()中的工作
+    tmp = t;
+    cout &lt;&lt; tmp &lt;&lt; endl; //输出5
+}
+
+template&lt;class I&gt;
+inline void func(I iter) {
+    //在这个函数中要声明一个变量，以iter所指对象的类别为类别
+    func_impl(iter, *iter); //将func的工作全部移往func_impl
+}
+
+int main() {
+    int i = 5;
+    func(&amp;i);
+}
+</code></pre>
+<p>但是，iterator的相应类别不只“iter所指东西的类别”这一种，常见的有5种。并非任何情况下任何一种都可以用function template的参数推导机制来取得。</p>
+<h2 id="_4">声明内嵌类别</h2>
+<p>template的参数推导机制只能推导参数，无法推导函数的返回值类别。</p>
+<p>通过声明内嵌类别是个好主意！像这样：</p>
+<pre><code class="language-c++">//声明一个iterator
+template&lt;class T&gt;
+struct MyIter {
+    typedef T value_type; //声明内嵌类别
+    T *ptr;
+    MyIter(T *p = 0) : ptr(p) {}
+    T &amp;operator*() const { return *ptr; }
+};
+
+template&lt;class I&gt;
+typename I::value_type func(I iter) { //函数返回值是typename I::value_type
+    return *iter;
+}
+
+int main() {
+    MyIter&lt;int&gt; iter(new int(8));
+    cout &lt;&lt; func(iter) &lt;&lt; endl; //输出8
+}
+</code></pre>
+<p>但是不是所有iterator都是class type，原生指针就不是。class type无法为原生指针定义内嵌类别。</p>
+<h2 id="template-partial-specialization">模板偏特化(template partial specialization)</h2>
+<p>模板偏特化的意义：如果class template有多个template参数，针对(任何)template参数更进一步的条件限制所设计出来的一个特化版本。</p>
+<pre><code class="language-c++">template&lt;typename T&gt;
+class C{};
+
+template&lt;typename T&gt; //仅适用于T为原生指针的情况的特化版本
+class C&lt;T*&gt;{};
+</code></pre>
+<p>可以用下面的class template来萃取iterator的traits，value_type是traits之一</p>
+<pre><code class="language-c++">//如果I有自己的value_type，那萃取得到的value_type就是I::value_type
+template&lt;class I&gt;
+struct iterator_traits {
+    typedef typename I::value_type value_type;
+};
+
+//针对iterator是原生指针的偏特化版本
+template&lt;class T&gt;
+struct iterator_traits&lt;T*&gt; {
+    typedef T value_type;
+};
+
+//针对iterator是pointer-to-const时, 萃取的类别应该是T而非const T
+template&lt;class T&gt;
+struct iterator_traits&lt;const T*&gt;{
+    typedef T value_type;
+};
+</code></pre></div>
             </div>
         </div>
 
